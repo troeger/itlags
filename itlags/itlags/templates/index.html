@@ -1,0 +1,152 @@
+<script>
+
+// This code is a small modification of the original pingms source code.
+// It was originally available at https://github.com/pingms/pingms,
+// but meanwhile seems to be gone.
+//
+// All the credits belong to the original author.
+
+"use strict"
+
+const data = {
+    {% for group in groups %}
+     {{ group.name }}: [
+       {% for entry in group.servers.all %}
+         {name: "{{entry.name}}", url: "{{entry.url}}"},
+       {% endfor %}
+     ],
+    {% endfor %}
+};
+
+let nextTick = window.requestAnimationFrame || window.setTimeout // The delay function
+let tasks = [] // Pending task
+let img = document.createElement("img") // Image for test
+//
+//
+// Prepare to run tests
+function prepare() {
+    const resultArea = document.querySelector("#result");
+    resultArea.appendChild(img);
+    function simpleElement(tag, text) {
+        const el = document.createElement(tag);
+        el.textContent = text;
+        return el;
+    }
+    Object.entries(data).forEach(function (pair) {
+        const key = pair[0];
+        const array = pair[1];
+        const subtasks = [];
+        const section = document.createElement("section");
+        section.appendChild(simpleElement("h3", key));
+        section.style.setProperty("--nums", array.length);
+        array.forEach(function (item, i) {
+            const bodyline = document.createElement("div");
+            let result, name;
+            bodyline.appendChild(result = simpleElement("span", "Pending"));
+            result.className = "result";
+            bodyline.appendChild(name = simpleElement("span", item.name));
+            name.className = "name";
+            section.appendChild(bodyline);
+            subtasks.push({
+                line: bodyline,
+                url: item.url,
+                result: result
+            });
+            bodyline.style.setProperty("--index", i);
+        });
+        resultArea.appendChild(section);
+        tasks.push(subtasks);
+    })
+}
+//
+//
+// Load image and set callback
+function loadImg(src, callback) {
+    img.src = src + Math.random();
+    img.onerror = callback;
+    img.onload = callback;
+}
+//
+//
+// Start Ping
+function handleTasks() {
+    if (tasks.length == 0) {
+        img.remove();
+        return;
+    }
+    const currentSubTasks = tasks.shift();
+    const subResults = [];
+    let startTime = 0;
+    let maxDelay = 1;
+    nextTick(function handleSubTasks() {
+        subResults.sort(function(a, b) {
+            return a.delay - b.delay;
+        });
+        subResults.forEach(function (key, index) {
+            key.line.style.setProperty("--index", index);
+        });
+        if (currentSubTasks.length == 0) {
+            return nextTick(handleTasks);
+        }
+        const task = currentSubTasks.shift();
+        task.result.textContent = "Wait DNS";
+        // First time to load image (skip DNS querying)
+        loadImg(task.url, function() {
+            startTime = new Date().getTime();
+            let finished = false;
+            function updateDelay() {
+                const now = new Date().getTime();
+                const delay = now - startTime;
+                if (delay > maxDelay) {
+                    maxDelay = delay;
+                    task.line.parentElement.style.setProperty("--max-delay", delay);
+                }
+                task.result.textContent = (delay) + "ms";
+                task.line.style.setProperty("--delay", delay);
+                return delay;
+            }
+            // Update delay realtime
+            nextTick(function rev() {
+                if (!finished) {
+                    updateDelay();
+                    nextTick(rev);
+                }
+            });
+            // Second time to load image (measure latency)
+            loadImg(task.url, function() {
+                finished = true;
+                subResults.push({
+                    line: task.line,
+                    delay: updateDelay()
+                });
+                nextTick(handleSubTasks);
+            });
+        });
+    });
+}
+function main() {
+    prepare();
+    nextTick(handleTasks);
+}
+</script>
+
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>PING ms</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="static/style.css">
+</head>
+
+<body onload="main()">
+  <div class="content">
+    <h2>It lags!</h2>
+    <p>Here are some statistics about your Internet connectivity:</p>
+    <div id="result">
+    </div>
+  </div>
+</body>
+
+</html>
