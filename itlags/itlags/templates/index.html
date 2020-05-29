@@ -125,28 +125,48 @@ function handleTasks() {
     });
 }
 function main() {
+    document.getElementById("useragent").textContent = navigator.userAgent;
+
     prepare();
     nextTick(handleTasks);
 }
 </script>
 
-<!DOCTYPE html>
 <html>
 
 <head>
   <meta charset="UTF-8">
-  <title>PING ms</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>It lags!</title>
   <link rel="stylesheet" href="static/style.css">
 </head>
 
 <body onload="main()">
   <div class="content">
     <h2>It lags!</h2>
-    <p>Here are some statistics about your Internet connectivity:</p>
+    <p>Sorry for that &#128533;.</p><p>Here are some basic facts about your Internet connectivity:</p>
+    <table>
+        <tr>
+            <td>Address:</td>
+            <td>{{ client_ip }}</td>
+        </tr>
+        <tr>
+            <td>Browser:</td>
+            <td> <span id="useragent"></span></td>
+        </tr>
+    </table>
+    <p>Here is a performance measurement from your machine:
     <div id="result">
     </div>
+
+    <p>
+      You can save this report on the server to generate a link:
+    </p>
+    <p>
+      <form action="/reports/" method="post">
+          {% csrf_token %}
+          <input type="submit" value="Save report">
+      </form>
+    </p>
   </div>
 </body>
-
 </html>

@@ -3,12 +3,19 @@
 }
 
 body {
-  color: #ffffff;
+  color: black;
   font-size: 14px;
   font-family: Tahoma, Helvetica, Arial, sans-serif;
   margin: 8px;
   --item-height: 16px;
   --section-header-height: 30px;
+}
+
+table {
+  font-size: 14px;
+  font-family: Tahoma, Helvetica, Arial, sans-serif;
+  border-spacing: 10px;
+  width: 90%;  
 }
 
 p {
