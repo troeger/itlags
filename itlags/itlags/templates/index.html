@@ -12,7 +12,7 @@ const data = {
     {% for group in groups %}
      {{ group.name }}: [
        {% for entry in group.servers.all %}
-         {name: "{{entry.name}}", url: "{{entry.url}}"},
+         {name: "{{entry.name}}", url: "{{entry.url}}", pk: "{{entry.pk}}"},
        {% endfor %}
      ],
     {% endfor %}
@@ -50,7 +50,8 @@ function prepare() {
             subtasks.push({
                 line: bodyline,
                 url: item.url,
-                result: result
+                result: result,
+                pk: item.pk 
             });
             bodyline.style.setProperty("--index", i);
         });
@@ -103,6 +104,8 @@ function handleTasks() {
                 }
                 task.result.textContent = (delay) + "ms";
                 task.line.style.setProperty("--delay", delay);
+                document.getElementById( task.pk ).value = delay;
+
                 return delay;
             }
             // Update delay realtime
@@ -125,7 +128,8 @@ function handleTasks() {
     });
 }
 function main() {
-    document.getElementById("useragent").textContent = navigator.userAgent;
+    document.getElementById("useragent_shown").textContent = navigator.userAgent;
+    document.getElementById("useragent_report").textContent = navigator.userAgent;
 
     prepare();
     nextTick(handleTasks);
@@ -146,12 +150,12 @@ function main() {
     <p>Sorry for that &#128533;.</p><p>Here are some basic facts about your Internet connectivity:</p>
     <table>
         <tr>
-            <td>Address:</td>
+            <td>Your IP Address:</td>
             <td>{{ client_ip }}</td>
         </tr>
         <tr>
-            <td>Browser:</td>
-            <td> <span id="useragent"></span></td>
+            <td>Your Browser:</td>
+            <td> <span id="useragent_shown"></span></td>
         </tr>
     </table>
     <p>Here is a performance measurement from your machine:
@@ -159,11 +163,19 @@ function main() {
     </div>
 
     <p>
-      You can save this report on the server to generate a link:
+      You can save this report on the server to get a link:
     </p>
     <p>
       <form action="/reports/" method="post">
           {% csrf_token %}
+          <input type="hidden" name="client_ip" value="{{client_ip}}">
+          <input id="useragent_report" type="hidden" name="useragent" value="">
+          {% for group in groups %}
+             {% for entry in group.servers.all %}
+                <input id="{{entry.pk}}" type="hidden" name="{{entry.pk}}" value=""/>
+             {% endfor %}
+          {% endfor %}
+
           <input type="submit" value="Save report">
       </form>
     </p>
